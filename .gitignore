@@ -1,0 +1,2 @@
+# Private client handoff contains admin credentials; keep it out of Git.
+CLIENT_HANDOFF.md
