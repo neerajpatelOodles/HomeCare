@@ -33,6 +33,9 @@ export default function SchedulePage() {
     return api(`/api/visits?${p}`).then((r) => r.data);
   }, [page, f]);
   const items = data?.items || [];
+  const clients = options.data?.clients || [];
+  const caregivers = options.data?.caregivers || [];
+  const hasClients = clients.length > 0;
   const set = (k) => (e) => setForm((x) => ({ ...x, [k]: e.target.value }));
   const filter = (k) => (e) => { setF((x) => ({ ...x, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value })); setPage(1); };
 
@@ -65,13 +68,18 @@ export default function SchedulePage() {
       {show && (
         <form className="panel form-panel" onSubmit={create} noValidate>
           <h2>New visit</h2>
+          {!hasClients && (
+            <Notice kind="warn">
+              No active clients are available yet. Create a client record first in <Link href="/admin/clients">Clients</Link>, then return here.
+            </Notice>
+          )}
           <Notice kind="error">{formError}</Notice>
           <div className="grid-2">
             <Field id="vc" label="Client" error={errs.clientId}>
-              <select id="vc" value={form.clientId} onChange={set('clientId')}><option value="">Select client…</option>{(options.data?.clients || []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+              <select id="vc" value={form.clientId} onChange={set('clientId')} disabled={!hasClients}><option value="">{hasClients ? 'Select client…' : 'No clients available'}</option>{clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
             </Field>
             <Field id="vg" label="Caregiver" hint="Leave empty to assign later." error={errs.caregiverId}>
-              <select id="vg" value={form.caregiverId} onChange={set('caregiverId')}><option value="">Unassigned</option>{(options.data?.caregivers || []).map((c) => <option key={c.id} value={c.id}>{c.name}{c.profession ? ` (${c.profession})` : ''}</option>)}</select>
+              <select id="vg" value={form.caregiverId} onChange={set('caregiverId')}><option value="">Unassigned</option>{caregivers.map((c) => <option key={c.id} value={c.id}>{c.name}{c.profession ? ` (${c.profession})` : ''}</option>)}</select>
             </Field>
             <Field id="vs" label="Start" error={errs.startAt}><input id="vs" type="datetime-local" value={form.startAt} onChange={set('startAt')} /></Field>
             <Field id="ve" label="End" error={errs.endAt}><input id="ve" type="datetime-local" value={form.endAt} onChange={set('endAt')} /></Field>
@@ -81,7 +89,7 @@ export default function SchedulePage() {
           <p className="hint">Times are in your browser's timezone.</p>
           <div className="form-actions">
             <button type="button" className="btn btn-ghost" onClick={() => setShow(false)} disabled={saving}>Cancel</button>
-            <button className="btn btn-primary btn-inline" disabled={saving}>{saving ? 'Saving…' : 'Create visit'}</button>
+            <button className="btn btn-primary btn-inline" disabled={saving || !hasClients}>{saving ? 'Saving…' : 'Create visit'}</button>
           </div>
         </form>
       )}
@@ -90,8 +98,8 @@ export default function SchedulePage() {
         <div className="filters">
           <label className="check-row" style={{ margin: 0 }}>From <input type="date" value={f.from} onChange={filter('from')} /></label>
           <label className="check-row" style={{ margin: 0 }}>To <input type="date" value={f.to} onChange={filter('to')} /></label>
-          <select aria-label="Caregiver" value={f.caregiverId} onChange={filter('caregiverId')}><option value="">All caregivers</option>{(options.data?.caregivers || []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
-          <select aria-label="Client" value={f.clientId} onChange={filter('clientId')}><option value="">All clients</option>{(options.data?.clients || []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+          <select aria-label="Caregiver" value={f.caregiverId} onChange={filter('caregiverId')}><option value="">All caregivers</option>{caregivers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+          <select aria-label="Client" value={f.clientId} onChange={filter('clientId')} disabled={!hasClients}><option value="">{hasClients ? 'All clients' : 'No clients'}</option>{clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
           <select aria-label="Status" value={f.status} onChange={filter('status')}><option value="">All statuses</option>{['scheduled', 'completed', 'cancelled', 'missed'].map((s) => <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}</select>
           <label className="check-row" style={{ margin: 0 }}><input type="checkbox" checked={f.unassigned} onChange={filter('unassigned')} />Unassigned only</label>
         </div>

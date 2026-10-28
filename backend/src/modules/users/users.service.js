@@ -103,13 +103,31 @@ async function create(input) {
       `INSERT INTO profiles (${cols.join(', ')}) VALUES (${cols.map((_, i) => `$${i + 1}`).join(', ')})`,
       vals
     );
+
+    if (input.role === 'client') {
+      await db.query(
+        `INSERT INTO clients (user_id, first_name, last_name, email, phone, status)
+         VALUES ($1, $2, $3, $4, $5, 'active')
+         ON CONFLICT (user_id) DO UPDATE SET
+           first_name = EXCLUDED.first_name,
+           last_name = EXCLUDED.last_name,
+           email = EXCLUDED.email,
+           phone = EXCLUDED.phone,
+           status = 'active'`,
+        [userId, input.firstName ?? null, input.lastName ?? null, input.email, input.phone ?? null]
+      );
+    }
     return userId;
   });
   return getById(id);
 }
 
-async function update(id, input, actingUserId) {
+async function update(id, input, actingUserId, actingRole) {
   await getById(id); // 404 if missing
+
+  if (actingRole === 'hr' && input.role && !['staff', 'caregiver'].includes(input.role)) {
+    throw ApiError.forbidden('HR can only assign Staff or Caregiver roles');
+  }
 
   if (id === actingUserId && (input.isActive === false || (input.role && input.role !== 'admin'))) {
     throw ApiError.badRequest('You cannot deactivate or demote your own account');

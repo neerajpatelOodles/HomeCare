@@ -2,6 +2,7 @@ const env = require('../../config/env');
 const asyncHandler = require('../../utils/asyncHandler');
 const { COOKIES } = require('../../utils/constants');
 const authService = require('./auth.service');
+const passwordTokens = require('./passwordTokens');
 
 const baseCookie = {
   httpOnly: true,
@@ -60,4 +61,9 @@ exports.logout = asyncHandler(async (req, res) => {
 exports.me = asyncHandler(async (req, res) => {
   const user = await authService.getCurrentUser(req.user.id);
   res.json({ success: true, data: { user } });
+});
+
+exports.setPassword = asyncHandler(async (req, res) => {
+  await passwordTokens.setPassword(req.body.token, req.body.password);
+  res.json({ success: true, message: 'Password set. You can now sign in.' });
 });

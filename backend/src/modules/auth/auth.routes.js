@@ -1,21 +1,15 @@
 const router = require('express').Router();
-const rateLimit = require('express-rate-limit');
 const validate = require('../../middleware/validate');
 const authenticate = require('../../middleware/authenticate');
-const { loginBody, registerBody } = require('./auth.validation');
+const { loginLimiter, registerLimiter } = require('../../middleware/rateLimiters');
+const { loginBody, registerBody, setPasswordBody } = require('./auth.validation');
 const controller = require('./auth.controller');
 
-// Brute-force protection on login only.
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, message: 'Too many login attempts, try again later' },
-});
-
 router.post('/login', loginLimiter, validate({ body: loginBody }), controller.login);
-router.post('/register', validate({ body: registerBody }), controller.register);
+// Public signup creates CLIENT accounts only.
+router.post('/register', registerLimiter, validate({ body: registerBody }), controller.register);
+// Public: used by the link in a caregiver's invite email.
+router.post('/set-password', registerLimiter, validate({ body: setPasswordBody }), controller.setPassword);
 router.post('/refresh', controller.refresh);
 router.post('/logout', controller.logout);
 router.get('/me', authenticate, controller.me);

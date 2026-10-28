@@ -11,6 +11,8 @@ const PAGE_SIZE = 10;
 
 export default function AdminUsersPage() {
   const { user: me } = useAuth();
+  const isHrManager = me?.role === 'hr';
+  const roleOptions = isHrManager ? ['staff', 'caregiver'] : ['client', 'staff', 'caregiver', 'hr'];
 
   const [data, setData] = useState({ items: [], pagination: { page: 1, totalPages: 1, total: 0 } });
   const [loading, setLoading] = useState(true);
@@ -113,6 +115,19 @@ export default function AdminUsersPage() {
     }
   }
 
+  async function changeRole(u, nextRole) {
+    if (nextRole === u.role || u.id === me.id) return;
+    setNotice('');
+    setListError('');
+    try {
+      await api(`/api/admin/users/${u.id}`, { method: 'PATCH', body: { role: nextRole } });
+      setNotice(`${u.email} role was changed to ${ROLE_LABEL[nextRole]}.`);
+      await load();
+    } catch (err) {
+      setListError(err.message);
+    }
+  }
+
   const { items, pagination } = data;
 
   return (
@@ -120,9 +135,9 @@ export default function AdminUsersPage() {
       <div className="page-head">
         <div>
           <h1>Users</h1>
-          <p className="muted">Create and manage Client, Staff, HR and Admin accounts. Caregivers are created automatically when HR hires an applicant.</p>
+          <p className="muted">Create and manage Client, Staff, Caregiver, HR and Admin accounts. Caregivers are normally created automatically when HR hires an applicant.</p>
         </div>
-        {!showForm && (
+        {!showForm && !isHrManager && (
           <button className="btn btn-primary btn-inline" onClick={openForm}>
             + Add user
           </button>
@@ -151,10 +166,9 @@ export default function AdminUsersPage() {
             </Field>
             <Field id="newRole" label="Role" error={fieldErrors.role}>
               <select id="newRole" value={form.role} onChange={setField('role')}>
-                <option value="client">Client</option>
-                <option value="staff">Staff</option>
-                <option value="hr">HR</option>
-                <option value="admin">Admin</option>
+                {roleOptions.map((roleKey) => (
+                  <option key={roleKey} value={roleKey}>{ROLE_LABEL[roleKey]}</option>
+                ))}
               </select>
             </Field>
             <Field
@@ -205,6 +219,7 @@ export default function AdminUsersPage() {
             <option value="">All roles</option>
             <option value="client">Clients</option>
             <option value="staff">Staff</option>
+                <option value="caregiver">Caregiver</option>
             <option value="hr">HR</option>
             <option value="admin">Admins</option>
           </select>
@@ -231,7 +246,20 @@ export default function AdminUsersPage() {
                   <tr key={u.id}>
                     <td>{name}{isMe && <span className="you"> (you)</span>}</td>
                     <td>{u.email}</td>
-                    <td><span className={`pill pill-${u.role}`}>{ROLE_LABEL[u.role]}</span></td>
+                    <td>
+                      <select
+                        className="role-select"
+                        value={u.role}
+                        onChange={(e) => changeRole(u, e.target.value)}
+                        disabled={isMe}
+                        aria-label={`Change role for ${u.email}`}
+                        title={isMe ? 'You cannot change your own role' : 'Change role'}
+                      >
+                        {roleOptions.map((roleKey) => (
+                          <option key={roleKey} value={roleKey}>{ROLE_LABEL[roleKey]}</option>
+                        ))}
+                      </select>
+                    </td>
                     <td>
                       <span className={u.isActive ? 'status on' : 'status off'}>
                         {u.isActive ? 'Active' : 'Inactive'}

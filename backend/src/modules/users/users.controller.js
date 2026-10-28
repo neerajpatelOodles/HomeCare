@@ -16,6 +16,6 @@ exports.create = asyncHandler(async (req, res) => {
 });
 
 exports.update = asyncHandler(async (req, res) => {
-  const user = await service.update(req.params.id, req.body, req.user.id);
+  const user = await service.update(req.params.id, req.body, req.user.id, req.user.role);
   res.json({ success: true, data: { user } });
 });

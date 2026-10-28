@@ -1,7 +1,7 @@
 const { z } = require('zod');
 const { ROLES } = require('../../utils/constants');
 
-const roleEnum = z.enum([ROLES.CLIENT, ROLES.STAFF, ROLES.ADMIN]);
+const roleEnum = z.enum([ROLES.CLIENT, ROLES.STAFF, ROLES.CAREGIVER, ROLES.ADMIN, ROLES.HR]);
 
 const password = z
   .string()

@@ -86,11 +86,11 @@ function makeClient() {
   check('staff login -> /staff/dashboard', r.body?.data?.redirectTo === '/staff/dashboard');
 
   r = await clientUser.req('GET', '/dashboard/client');
-  check('client dashboard message', r.status === 200 && r.body.data.message === 'Welcome Client – Phase 1 Placeholder', JSON.stringify(r.body));
+  check('client dashboard message', r.status === 200 && r.body.data.message === 'Welcome Client', JSON.stringify(r.body));
   r = await staffUser.req('GET', '/dashboard/staff');
-  check('staff dashboard message', r.status === 200 && r.body.data.message === 'Welcome Staff – Phase 1 Placeholder');
+  check('staff dashboard message', r.status === 200 && r.body.data.message === 'Welcome Staff');
   r = await admin.req('GET', '/dashboard/admin');
-  check('admin dashboard message', r.status === 200 && r.body.data.message === 'Welcome Admin – Phase 1 Placeholder');
+  check('admin dashboard message', r.status === 200 && r.body.data.message === 'Welcome Admin');
 
   console.log('Access control');
   check('client -> staff dashboard 403', (await clientUser.req('GET', '/dashboard/staff')).status === 403);

@@ -1,6 +1,7 @@
 const env = require('./config/env');
 const { pool } = require('./config/db');
 const app = require('./app');
+const worker = require('./modules/notifications/worker');
 
 async function start() {
   await pool.query('SELECT 1'); // fail fast if the database is unreachable
@@ -8,8 +9,11 @@ async function start() {
     console.log(`Home-Care Central API listening on :${env.port} (${env.nodeEnv})`);
   });
 
+  worker.start();
+
   const shutdown = (signal) => {
     console.log(`${signal} received, shutting down...`);
+    worker.stop();
     server.close(async () => {
       await pool.end();
       process.exit(0);

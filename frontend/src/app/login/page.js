@@ -40,7 +40,7 @@ export default function LoginPage() {
           <span>Home-Care Central</span>
         </div>
         <h1>Sign in</h1>
-        <p className="muted">Clients, staff and administrators sign in here.</p>
+        <p className="muted">Clients, caregivers, HR and administrators sign in here.</p>
 
         {error && <p className="alert" role="alert">{error}</p>}
 
@@ -70,6 +70,9 @@ export default function LoginPage() {
 
         <p className="switch-link">
           Need an account? <Link href="/register">Create one as a client</Link>
+        </p>
+        <p className="switch-link">
+          Looking for a caregiving job? <Link href="/apply">Apply here</Link>
         </p>
       </form>
     </div>

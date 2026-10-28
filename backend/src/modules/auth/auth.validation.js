@@ -5,6 +5,7 @@ const loginBody = z.object({
   password: z.string().min(1, 'Password required'),
 });
 
+// Public self-signup can only ever create a CLIENT. Any other role is rejected.
 const registerBody = z.object({
   email: z.string().trim().toLowerCase().email('Valid email required'),
   password: z
@@ -18,4 +19,9 @@ const registerBody = z.object({
   role: z.literal('client').optional().default('client'),
 });
 
-module.exports = { loginBody, registerBody };
+const setPasswordBody = z.object({
+  token: z.string().trim().min(20, 'Token required').max(200),
+  password: registerBody.shape.password,
+});
+
+module.exports = { loginBody, registerBody, setPasswordBody };

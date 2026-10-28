@@ -63,43 +63,36 @@ async function login(email, password, meta) {
   };
 }
 
-async function register({ email, password, firstName, lastName, role = 'client' }, meta) {
+/** Public self-signup: always creates a client, then signs them in. */
+async function register({ email, password, firstName, lastName }, meta) {
   const exists = await query('SELECT 1 FROM users WHERE LOWER(email) = LOWER($1)', [email]);
   if (exists.rowCount) throw ApiError.conflict('A user with this email already exists');
 
   const hash = await bcrypt.hash(password, env.auth.bcryptRounds);
 
-  const created = await withTransaction(async (db) => {
+  const { row, refreshToken } = await withTransaction(async (db) => {
     const { rows } = await db.query(
       `INSERT INTO users (email, password_hash, role_id)
-       VALUES ($1, $2, (SELECT id FROM roles WHERE name = $3))
+       VALUES ($1, $2, (SELECT id FROM roles WHERE name = 'client'))
        RETURNING id`,
-      [email, hash, role]
+      [email, hash]
     );
-
     const userId = rows[0].id;
     await db.query(
       'INSERT INTO profiles (user_id, first_name, last_name) VALUES ($1, $2, $3)',
       [userId, firstName, lastName]
     );
-
-    const userResult = await db.query(`${USER_SELECT} WHERE u.id = $1`, [userId]);
-    return { row: userResult.rows[0], userId };
+    await db.query(
+      `INSERT INTO clients (user_id, first_name, last_name, email, status)
+       VALUES ($1, $2, $3, $4, 'active')`,
+      [userId, firstName, lastName, email]
+    );
+    await db.query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [userId]);
+    const userRes = await db.query(`${USER_SELECT} WHERE u.id = $1`, [userId]);
+    return { row: userRes.rows[0], refreshToken: await createSession(db, userId, meta) };
   });
 
-  const { row } = created;
-  if (!row) throw new ApiError(500, 'Unable to create account');
-
-  const refreshToken = await withTransaction(async (db) => {
-    await db.query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [row.id]);
-    return createSession(db, row.id, meta);
-  });
-
-  return {
-    user: toPublicUser(row),
-    accessToken: signAccessToken(row),
-    refreshToken,
-  };
+  return { user: toPublicUser(row), accessToken: signAccessToken(row), refreshToken };
 }
 
 /** Rotate: the presented refresh token is revoked and a new one issued. */
